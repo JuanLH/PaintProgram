@@ -5,15 +5,21 @@
  */
 package Main;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 import javax.swing.JPanel;
 import javax.swing.JButton;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.BorderLayout;
+import java.awt.Frame;
 import java.awt.GridLayout;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.MenuBar;
 import java.awt.Stroke;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -23,6 +29,20 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseMotionAdapter;
 import java.awt.event.MouseEvent;
+import java.io.BufferedReader;
+import java.io.DataInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.swing.JFileChooser;
+import javax.swing.JFrame;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
 
 public class PaintPanel extends JPanel implements Runnable 
 {	
@@ -46,7 +66,13 @@ public class PaintPanel extends JPanel implements Runnable
 	// Current color (blue) and stroke size (thin)
 	private Color currColor = new Color(0, 0, 255);
 	private Stroke currBrush = new BasicStroke(1.0f);
-        private String currSimbol;
+        private int currSimbol = 0;
+        
+        //Bottons
+        JButton load,save;
+        
+        JFileChooser fChooser;
+       
 	
 	// Stores the colors
 	private HashMap<Integer, Color> colors = new HashMap<Integer, Color>();
@@ -61,10 +87,12 @@ public class PaintPanel extends JPanel implements Runnable
 	private ArrayList<PaintPoint> points = new ArrayList<PaintPoint>();
 	
         // Simbols
-        private String [] simbols = new String[5];
+        HashMap simbols = new HashMap();
 	// Constructor
 	public PaintPanel()
 	{
+                
+                fChooser = new JFileChooser();
 		// Set mouse listener so that mouse drags can be recorded
 		addMouseMotionListener(new MouseDragHandler());
 		addMouseListener(new MouseReleaseHandler());
@@ -95,7 +123,7 @@ public class PaintPanel extends JPanel implements Runnable
 		// Initialize button array's
 		colorB = new JButton[5];	
 		brushB = new JButton[5];
-                simbolsB = new JButton[5];
+                simbolsB = new JButton[9];
 		
 		// Initialize colors and put them into the HashMap and add color description to ArrayList
 		Color blue = new Color(0,0,255);
@@ -117,11 +145,36 @@ public class PaintPanel extends JPanel implements Runnable
 		colorList.add("red");
                 
                 //Simbolos characters
-                simbols[0]="/";
-                simbols[1]="+";
-                simbols[2]="#";
-                simbols[3]="@";
-                simbols[4]=")";
+                simbols.put(0, 
+                    "---"+"|  |"+"---"
+                );
+                simbols.put(1, 
+                    ">->->"
+                );
+                
+                simbols.put(2, 
+                    "---*"
+                );
+                simbols.put(3, 
+                    "^U^"
+                );
+                simbols.put(4, 
+                    "^_^"
+                );
+                simbols.put(5, 
+                    "^Y^"
+                );
+                simbols.put(6, 
+                    "->K<-"
+                );
+                simbols.put(7,
+                    "(-_-)"
+                );
+                
+                simbols.put(8, 
+                    "*"
+                );
+                
                 
 
 		
@@ -161,25 +214,12 @@ public class PaintPanel extends JPanel implements Runnable
 			colorP.add(colorB[i]);
 		}
 		
-		// Add brush buttons to panel
-		/*for(int i = 0; i < brushB.length; i++)
-		{
-			// Set the brush sizes as buttons
-			float brushSize = ((float)(i+1)*2-1);
-			brushB[i] = new JButton(Float.toString(brushSize));
-			
-			// When clicked on sends to the ButtonHandler
-			brushB[i].addActionListener(new ButtonHandler());
-			
-			// Add brush size buttons to JPanel
-			brushP.add(brushB[i]);
-		}*/
                 
                 
-                for(int i = 0; i < simbolsB.length; i++)
+                for(int i = 0; i < simbols.size(); i++)
 		{
 			
-			simbolsB[i] = new JButton(""+simbols[i]+"");
+			simbolsB[i] = new JButton(""+simbols.get(i).toString()+"");
 			
 			// When clicked on sends to the ButtonHandler
 			simbolsB[i].addActionListener(new ButtonHandler());
@@ -195,6 +235,19 @@ public class PaintPanel extends JPanel implements Runnable
 		clearB.addActionListener(new ButtonHandler());
 		clearB.setSize(buttonLen, buttonHeight);
 		clearP.add(clearB);
+                
+                // Add save button at at the botton of panel
+                save = new JButton("Save");
+                save.addActionListener(new ButtonHandler());
+                save.setSize(buttonLen,buttonHeight);
+                clearP.add(save);
+                
+                // Add load button at at the botton of panel
+                load = new JButton("Load");
+                load.addActionListener(new ButtonHandler());
+                load.setSize(buttonLen,buttonHeight);
+                clearP.add(load);
+                
 	}
 	
         @Override
@@ -208,13 +261,12 @@ public class PaintPanel extends JPanel implements Runnable
 		for(int i = 0; i < (points.size()-1); i++)
 		{
 			g2d.setColor(points.get(i).color);
-			g2d.setStroke(points.get(i).stroke);
-			
 			if(points.get(i).bool == false)
 			{
+                                //System.out.println(points.get(i).simbol);
 				/*graphics.drawLine
 				(points.get(i).x, points.get(i).y, points.get(i+1).x, points.get(i+1).y);*/
-                                graphics.drawString(points.get(i).simbol,points.get(i).x,points.get(i).y);
+                                graphics.drawString((String)simbols.get(points.get(i).simbol),points.get(i).x,points.get(i).y);
 			}
 		}
 	}
@@ -278,23 +330,78 @@ public class PaintPanel extends JPanel implements Runnable
                         
                         // If a simbol button is pressed
                         if(event.getSource() == simbolsB[0]){
-                                currSimbol = simbols[0];
+                                currSimbol = 0;
                         }
                         if(event.getSource() == simbolsB[1]){
-                                currSimbol = simbols[1];
+                                currSimbol = 1;
                         }
                         if(event.getSource() == simbolsB[2]){
-                                currSimbol = simbols[2];
+                                currSimbol = 2;
                         }
                         if(event.getSource() == simbolsB[3]){
-                                currSimbol = simbols[3];
+                                currSimbol = 3;
                         }
                         if(event.getSource() == simbolsB[4]){
-                                currSimbol = simbols[4];
+                                currSimbol = 4;
+                        }
+                        if(event.getSource() == simbolsB[5]){
+                                currSimbol = 5;
+                        }
+                        if(event.getSource() == simbolsB[6]){
+                                currSimbol = 6;
+                        }
+                        if(event.getSource() == simbolsB[7]){
+                                currSimbol = 7;
+                        }
+                        if(event.getSource() == simbolsB[8]){
+                                currSimbol = 8;
+                        }
+                        
+                        
+                        if(event.getSource() == save){
+                                int result = fChooser.showSaveDialog(new Frame());
+                                if(result == JFileChooser.APPROVE_OPTION){
+                                    File createdFile = fChooser.getSelectedFile();
+                                    Gson json = new Gson();
+                                    String data = json.toJson(points);
+                                    
+                                    try {
+                                        FileWriter writer = new FileWriter(createdFile);
+                                        writer.write(data);
+                                        writer.flush();
+                                        writer.close();
+                                    } catch (IOException ex) {
+                                        Logger.getLogger(PaintPanel.class.getName()).log(Level.SEVERE, null, ex);
+                                    }
+                                    
+                                }
+                        }
+                        
+                        if(event.getSource() == load){
+                                String arch = null;
+                                int result = fChooser.showOpenDialog(new Frame());
+                                if(result == JFileChooser.APPROVE_OPTION){
+                                    File selectedFile = fChooser.getSelectedFile();
+                                    try {
+                                        arch = geTextFile(selectedFile);
+                                    } catch (IOException ex) {
+                                        Logger.getLogger(PaintPanel.class.getName()).log(Level.SEVERE, null, ex);
+                                    }
+                                    Gson json = new Gson();
+                                    JsonElement son = new JsonParser().parse(arch);
+                                    JsonArray array = son.getAsJsonArray();
+                                    
+                                    points.clear();
+                                    for(JsonElement json2: array){
+                                        PaintPoint point = new PaintPoint();
+                                        point = json.fromJson(json2, PaintPoint.class);
+                                        
+                                        points.add(point);
+                                    }
+                                }
                         }
 			
-			
-			// If clear button pressed
+                        // If clear button pressed
 			if(event.getSource() == clearB)
 			{
 				points = new ArrayList<PaintPoint>();
@@ -308,7 +415,7 @@ public class PaintPanel extends JPanel implements Runnable
 		public void mouseReleased(MouseEvent e)
 		{
 			// Records mouse dragged events
-			points.add(new PaintPoint(currColor, currBrush,currSimbol, e.getX(), e.getY(), false));	
+			points.add(new PaintPoint(currColor,currSimbol, e.getX(), e.getY(), false));	
 		}
                 
                
@@ -319,10 +426,8 @@ public class PaintPanel extends JPanel implements Runnable
 		public void mouseClicked(MouseEvent e)
 		{
 			// Records mouse dragged events
-			points.add(new PaintPoint(currColor, currBrush,currSimbol, e.getX(), e.getY(), false));	
+			points.add(new PaintPoint(currColor,currSimbol, e.getX(), e.getY(), false));	
 		}
-                
-               
 	}
 
 	private class MouseDragHandler extends MouseMotionAdapter
@@ -330,9 +435,31 @@ public class PaintPanel extends JPanel implements Runnable
 		public void mouseDragged(MouseEvent e)
 		{
 			// Records mouse dragged events
-			points.add(new PaintPoint(currColor, currBrush,currSimbol, e.getX(), e.getY(), false));
+			points.add(new PaintPoint(currColor,currSimbol, e.getX(), e.getY(), false));
 		}
 	}
+        
+        public String geTextFile(File file) throws FileNotFoundException, IOException{
+            String txt = "";
+            FileInputStream fi = new FileInputStream(file);
+            DataInputStream di = new DataInputStream(fi);
+            int count = fi.available();
+            byte[] bs = new byte[count];
+            di.read(bs);
+            for(int i=0;i<count;i++){
+                char c = (char)bs[i];
+                 txt+=c;
+            }
+            return txt;
+        }
+    
+    
+        public String getLineFile(File file) throws FileNotFoundException, IOException{
+            String txt = "";
+            BufferedReader bf = new BufferedReader(new FileReader(file));
+            txt = bf.readLine();
+            return txt;
+        }
 
         @Override
 	public void run() 
@@ -340,12 +467,12 @@ public class PaintPanel extends JPanel implements Runnable
 		while(true)
 		{
 			// Repaint drawing in drawing panel not whole frame
-			 repaint(0, 0, 850, 450);
+			repaint(0, 0, 850, 450);
 			
 			try 
 			{
 				// Thread sleeps
-				Thread.sleep(10);
+				Thread.sleep(100);
 			} 
 			catch (InterruptedException e) 
 			{

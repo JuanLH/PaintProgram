@@ -5,6 +5,8 @@
  */
 package Main;
 
+
+
 import javax.swing.JFrame;
 
 
@@ -33,6 +35,8 @@ public class Main extends JFrame
 		frame.setSize(850, 600);
 		frame.setLocation(400, 100);
 		frame.setVisible(true);		
+                
+                
 	}
 }
 
